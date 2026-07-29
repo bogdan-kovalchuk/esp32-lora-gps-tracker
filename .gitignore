@@ -1,0 +1,13 @@
+.pio/
+.vscode/
+
+# Local credentials. Copy secrets.example.h and replace the values.
+include/secrets.h
+
+# Local build and editor artifacts
+*.bin
+*.elf
+*.map
+*.log
+.DS_Store
+Thumbs.db
