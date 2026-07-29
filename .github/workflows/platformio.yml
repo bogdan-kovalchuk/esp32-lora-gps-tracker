@@ -1,0 +1,40 @@
+name: PlatformIO
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install PlatformIO Core
+        run: pip install platformio==6.1.19
+
+      - name: Prepare non-production CI credentials
+        run: cp include/secrets.example.h include/secrets.h
+
+      - name: Run protocol tests
+        run: pio test -e native
+
+      - name: Build transmitter and receiver
+        run: pio run
