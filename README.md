@@ -48,6 +48,7 @@ Encrypted point-to-point GPS telemetry over 433 MHz LoRa between two ESP32 board
 ## Project structure
 
 ```
+├── .github/workflows/        CI: native tests and firmware builds
 ├── include/
 │   ├── app_config.h          pins, LoRa settings, demo mode
 │   ├── lora_radio.h          SX1278 init helper
@@ -59,6 +60,7 @@ Encrypted point-to-point GPS telemetry over 433 MHz LoRa between two ESP32 board
 ├── test/
 │   └── test_protocol/        native unit tests
 ├── docs/protocol.md          wire format reference
+├── LICENSE                   MIT
 └── platformio.ini            build environments
 ```
 
@@ -68,7 +70,7 @@ Encrypted point-to-point GPS telemetry over 433 MHz LoRa between two ESP32 board
    ```powershell
    Copy-Item include/secrets.example.h include/secrets.h
    ```
-2. Set `DEVICE_ID` and `AES_KEY` in `include/secrets.h` — both devices must match.
+2. Set `DEVICE_ID` and `AES_KEY` in `include/secrets.h` – both devices must match.
 3. Adjust pins, LoRa settings, or demo mode in `include/app_config.h`.
 
 ## Build and upload
