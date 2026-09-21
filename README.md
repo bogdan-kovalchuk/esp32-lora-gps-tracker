@@ -1,22 +1,28 @@
 # ESP32 LoRa GPS Tracker
 
-Encrypted point-to-point GPS telemetry between two ESP32 boards and 433 MHz
-SX1278 LoRa modules.
+Encrypted point-to-point GPS telemetry over 433 MHz LoRa between two ESP32 boards.
+
+## Prerequisites
+
+- [PlatformIO CLI](https://docs.platformio.org/en/latest/core/installation.html) or VS Code with the PlatformIO extension
+- GCC toolchain (only required to run native protocol tests)
 
 ## Features
 
-- Separate transmitter and receiver firmware.
-- Position, altitude, speed, course, satellites, HDOP, UTC date, and time.
-- AES-256-GCM authenticated encryption.
-- Versioned 72-byte binary packets with CRC16 and replay detection.
-- RSSI and SNR reporting on the receiver.
-- Demo mode for radio testing without a GPS module.
+- Separate transmitter and receiver firmware
+- Position, altitude, speed, course, satellites, HDOP, UTC date/time
+- AES-256-GCM authenticated encryption
+- Versioned 72-byte binary packets with CRC16 and replay detection
+- RSSI / SNR reporting on the receiver
+- Demo mode for radio testing without a GPS module
 
 ## Hardware
 
-- 2 x ESP32 DevKit V1
-- 2 x 433 MHz SX1278 modules with antennas
-- 1 x UART NMEA GPS module, such as the NEO-6M
+| Component | Qty | Notes |
+|---|---|---|
+| ESP32 DevKit V1 | 2 | |
+| SX1278 433 MHz + antenna | 2 | SPI, 3.3 V |
+| NEO-6M or compatible UART GPS | 1 | NMEA 9600 baud |
 
 ### SX1278 wiring
 
@@ -39,53 +45,51 @@ SX1278 LoRa modules.
 | RX | GPIO 17 (TX1, optional) |
 | GND | GND |
 
-The SX1278 uses 3.3 V. Attach an antenna before transmitting.
+## Project structure
+
+```
+├── include/
+│   ├── app_config.h          pins, LoRa settings, demo mode
+│   ├── lora_radio.h          SX1278 init helper
+│   ├── protocol.h            packet layout, CRC16, validation
+│   └── secrets.example.h     credential template
+├── src/
+│   ├── transmitter/main.cpp  GPS read → encrypt → send
+│   └── receiver/main.cpp     receive → decrypt → print
+├── test/
+│   └── test_protocol/        native unit tests
+├── docs/protocol.md          wire format reference
+└── platformio.ini            build environments
+```
 
 ## Setup
 
-Create the local credentials file:
-
-```powershell
-Copy-Item include/secrets.example.h include/secrets.h
-```
-
-Replace `DEVICE_ID` and `AES_KEY` in `include/secrets.h`. Both devices must use
-the same values. The file is excluded from Git.
-
-Hardware pins, LoRa settings, and demo mode are configured in
-`include/app_config.h`. Radio settings must match on both devices.
+1. Copy the credential template:
+   ```powershell
+   Copy-Item include/secrets.example.h include/secrets.h
+   ```
+2. Set `DEVICE_ID` and `AES_KEY` in `include/secrets.h` — both devices must match.
+3. Adjust pins, LoRa settings, or demo mode in `include/app_config.h`.
 
 ## Build and upload
 
 ```powershell
-# Build both firmware targets
-pio run
-
-# Run protocol tests
-pio test -e native
-
-# Upload one target at a time
-pio run -e transmitter -t upload
-pio run -e receiver -t upload
-
-# Open the serial monitor
-pio device monitor -b 115200
+pio run                                              # build both targets
+pio test -e native                                   # protocol tests
+pio run -e transmitter -t upload                     # flash transmitter
+pio run -e receiver -t upload                        # flash receiver
+pio device monitor -b 115200                         # serial monitor
 ```
 
-Set `USE_DEMO_POSITION` to `true` in `include/app_config.h` to transmit a fixed
-test position without a GPS module.
+## Security notes
 
-## Protocol and security
+- Header is AES-GCM AAD; payload + CRC16 are encrypted.
+- Nonce = random session ID (8 B) + sequence counter (4 B) → replay detection.
+- Replay state is in-memory only; it resets on receiver restart.
+- Never publish `secrets.h` or firmware built with production keys.
+- Check your region's frequency, power, and duty-cycle limits.
 
-The header is authenticated as AES-GCM additional data. The encrypted payload
-contains telemetry and CRC16-CCITT. A random session ID and sequence counter
-form the GCM nonce and provide in-memory replay detection.
-
-Replay state does not survive a receiver restart. Never publish
-`include/secrets.h` or firmware built with production credentials. Check the
-permitted frequency, power, and duty cycle for your region.
-
-See [docs/protocol.md](docs/protocol.md) for the packet layout.
+Full packet layout: [docs/protocol.md](docs/protocol.md)
 
 ## License
 
